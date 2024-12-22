@@ -6,9 +6,9 @@ from tkinter import messagebox
 
 #main window
 root=tk.Tk() 
-root.title("cafe menu") # it gives window a title 
-window_width = 1000 
-window_height = 600
+root.title("cafe management") # it gives window a title 
+window_width = 1500 
+window_height = 750
 screen_width=root.winfo_screenwidth()
 screen_height=root.winfo_screenheight()
 centre_x=int(screen_width/2-window_width/2)
@@ -28,9 +28,8 @@ heading2_label=tk.Label(root,text="-------------------Our cafe's best seller----
                         anchor="center",
                         fg="#654321",
                         bg="#CFBCA3")
-heading_label.grid(row=0,column=0,columnspan=7,pady=10)
-heading2_label.grid(row=1,column=0,columnspan=7,pady=10)
-
+heading_label.grid(row=0,column=0,columnspan=8,pady=10)
+heading2_label.grid(row=1,column=0,columnspan=8,pady=10)
 #best seller panel
 image_paths=[
     "C:/Users/Parija Sharma/OneDrive/Desktop/tkinter/Screenshot_20-10-2024_122333_www.bing.com.jpeg",
@@ -40,8 +39,8 @@ image_paths=[
     "C:/Users/Parija Sharma/OneDrive/Desktop/tkinter/expresso.jpeg",
     "C:/Users/Parija Sharma/OneDrive/Desktop/tkinter/pizza.webp",
     "C:/Users/Parija Sharma/OneDrive/Desktop/tkinter/doughnuts.jpg",
+    "C:/Users/Parija Sharma/OneDrive/Desktop/tkinter/Americano-coffee.jpg"
 ]
-
 captions={
     "Cinnemon Roll":120,
             "Frappe Coffee":150,
@@ -49,42 +48,40 @@ captions={
             "Burger":80,
             "Espresso":150,
             "Pizza":260,
-            "Doughnuts":85}
+            "Doughnuts":85, 
+            "Americano":120,}
 
 selected_items=[]
-image_objects=[]
 total_price=0
+# Inventory for each item
+inventory = {item: 10 for item in captions.keys()}  # Default stock for all items
+# Check if image paths and captions align
+if len(image_paths) != len(captions):
+    print("Error: The number of images does not match the number of items!")
+    exit()
+# Stock labels dictionary
+stock_labels = {}
 
-
-def button_click(caption):
-    global total_price
-    price=captions[caption]
-    selected_items.append((caption,price))
-    #print(f"you selected :{selected_items}\n")
-    total_price+=price
-
-    cart_listbox.insert(tk.END, f"{caption} - Rs {price}")
-    update_total()
-    total_label.config(text=f"total : Rs{total_price}")
-
-    
 # Display images in a grid 
-for index,path in enumerate(image_paths):
+image_objects=[]
+for index,(caption,price) in enumerate(captions.items()):
     try:
-        img=Image.open(path).resize((100,100),Image.LANCZOS)
+        img=Image.open(image_paths[index]).resize((100,100),Image.LANCZOS)
         img = ImageTk.PhotoImage(img)
         image_objects.append(img)
     except Exception as e:
-        print(f"Error loading image at{path}:{e}")
+        print(f"Error loading image at{caption}:{e}")
         continue
-
+  
+    stock_label = tk.Label(root, text=f"Stock: {inventory[caption]}", font=("Arial", 10), fg="green", bg="#CFBCA3")
+    stock_label.grid(row=4, column=index % 10)
+    stock_labels[caption] = stock_label
 #buttons with their respective pictures:
- 
     my_button=ttk.Button(root,image=img,command=lambda c=list(captions.keys())[index]:button_click(c))
-    my_button.grid(row=2,column=index,padx=35 , pady=10)
+    my_button.grid(row=2,column=index,padx=18, pady=10)
 #Display the caption under each image
     caption_label=tk.Label(root,text=list(captions.keys())[index],font=("Monotype Corsiva",12,"bold"))
-    caption_label.grid(row=3,column=index,padx=35,pady=10)
+    caption_label.grid(row=3,column=index,padx=18,pady=10)
 
 
 beveragemenu={
@@ -117,60 +114,129 @@ selected_items=[]
 def add_item():
     item=menu_combo.get().strip()
     if item:
-        price=beveragemenu.get(item)
-        if price is not None:
-            selected_items.append((item,price))
-            cart_listbox.insert(tk.END,f"{item}- Rs{price}")
-            update_total()
+        try:
+            qty = int(quantity_entry1.get())
+        except ValueError:
+            messagebox.showwarning("Invalid Quantity", "Please enter a valid integer for quantity.")
+            return
+        if qty>0:  
+            price=beveragemenu.get(item)
+            if price is not None:
+                selected_items.append((item,price*qty,qty))
+                cart_listbox.insert(tk.END,f"{item}x{qty}- Rs{price*qty}")
+                update_total()
+            else:
+                print("item not found")
         else:
-            print("item not found")
-        #print(f"you selected :{selected_items}\n")
+            messagebox.showwarning("Invalid Quantity")
       
 def add_item2():
     item=menu2_combo.get().strip()
     if item:
-        price=foodmenu.get(item)
-        if price is not None:
-            selected_items.append((item,price))
-            #print(f"you selected :{selected_items}\n")
-            cart_listbox.insert(tk.END,f"{item}- Rs{price}")
-            update_total()
+        try:
+            qty=int(quantity_entry2.get())
+        except ValueError:
+            messagebox.showwarning("Invalid Quantity", "Please enter a valid integer for quantity.")
+            return 
+        if qty>0:
+            price=foodmenu.get(item)
+            if price is not None:
+                selected_items.append((item,price*qty,qty))
+                #print(f"you selected :{selected_items}\n")
+                cart_listbox.insert(tk.END,f"{item}x{qty}- Rs{price*qty}")
+                update_total()
+            else:
+                print("item not found")
         else:
-            print("item not found")
-        #print(f"you selected :{selected_items}\n")      
+            messagebox.showwarning("Invlid quantity", "Quantity must be greater than zero.")
+
+#function to retrieve and validate quantity
+def quantity():
+    try:
+        return int(quantity_entry.get())
+    except ValueError:
+        messagebox.showwarning("Invalid Quantity")
+        return 1
+
+# Function for adding an item to the cart
+def button_click(caption):
+    global total_price
+    if inventory[caption]>0:
+        qty = quantity()
+        if inventory[caption] >= qty:  # Check if there is enough stock
+            price=captions[caption]*qty
+            selected_items.append((caption, price, qty))
+            inventory[caption] -= qty  # Deduct correct quantity
+            total_price += price
+            cart_listbox.insert(tk.END, f"{caption} x{qty} - Rs.{price}")
+            update_total()
+            update_stock_labels()
+        else:
+            messagebox.showwarning("Out of Stock", f"Sorry, there are only {inventory[caption]} units of {caption} left.")
+
 
 def update_total():
     global total_price
-    total_price=sum(price for __, price in selected_items)
+    total_price=sum(price for __, price,__ in selected_items)
     total_label.config(text=f"total : Rs{total_price}")
+
+# Function to update stock labels
+def update_stock_labels():
+    for item, label in stock_labels.items():
+        label.config(text=f"Stock: {inventory[item]}")
+        if inventory[item] < 3:
+            label.config(fg="red")
+        else:
+            label.config(fg="5C4033")
+
+# Calculate tax
+def tax(t=18):
+    return (total_price * t) / 100
 
 # Billing system to display detailed bill
 def generate_bill():
     if selected_items:
-        bill = "\n".join([f"{item}: Rs {price}" for item, price in selected_items])
-        total_price = sum(price for _, price in selected_items)
-        bill += f"\n\nTotal: Rs {total_price}"
+        bill="\n".join([f"{item} : Rs {price}" for item , price ,qty in selected_items])
+        total_price=sum(price for _,price, _ in selected_items)
+        taxx=tax()
+        total_with_tax=total_price+taxx
+        bill += f"\n\nTotal Price: Rs {total_price:.2f}"
+        bill+=f"\nTax: Rs{taxx:.2f}"
+        bill+=f"\n\nTotal (inc.Tax): Rs {total_with_tax:.2f}"
+        # Show the bill
         messagebox.showinfo("Bill", f"------ Your Bill ------\n\n{bill}")
     else:
         messagebox.showwarning("Empty Cart", "Your cart is empty. Please add items to the cart.")
 
-def Clear_button():
-    pass 
+def clear_cart():
+    global selected_items, total_price
+    for item, price, qty in selected_items:
+        if item in inventory:
+            inventory[item] += qty # Update inventory based on the quantity
+        else:
+            print(f"Warning: Item '{item}' not found in inventory.")
+    selected_items.clear()
+    cart_listbox.delete(0,tk.END)
+    total_price=0
+    update_total()
+    update_stock_labels()
+        
 
-class Inventory:
-    def __init__(self,items):
-        self.items=items
-        self.intial_items=items.copy()
-    def in_stock(self,item):
-        #checking if the item is in stock or not
-        return self.items.get(item,(0,0)[1])>0
-    def update_quantity(self,item,amount):
-        if item in self.items and self.items[item][1]>=amount:
-            self.items[item]=(self.items[item][0],self.items[item][1]-amount)
-            return True
-        return False
-    def reset_inventory(self):
-        self.items=self.intial_items.copy()
+def Clear2_button():
+    global selected_items, total_price
+    selected_items.clear()
+    menu_combo.delete(0,tk.END)
+    selected_items = [item for item in selected_items if item[0] not in beveragemenu]
+    #total_price=0
+    #total_label.config(text="Total: Rs 0.00")
+
+def Clear3_button():
+    global selected_items, total_price
+    selected_items.clear()
+    menu2_combo.delete(0,tk.END)
+    selected_items = [item for item in selected_items if item[0] not in foodmenu]
+    #total_price=0
+    #total_label.config(text="Total: Rs 0.00")
 
 initial_items = {
      'Espresso': (150, 7),
@@ -197,50 +263,80 @@ initial_items = {
 }
 
 
+def remove_item():
+    selected_index = cart_listbox.curselection() 
+    try:
+        if selected_index:
+            item_text = cart_listbox.get(selected_index)     
+            cart_listbox.delete(selected_index)  
+            item_name = item_text.split(" - Rs ")[0]
+            item_price = int(item_text.split("Rs ")[1])
+            selected_index.remove((item_name,item_price))
+            update_total()
+        else:
+            messagebox.showwarning("Item not found",f"{item_name} was not found in the cart.") 
+    except ValueError:
+        messagebox.showwarning("error")
+
+
 # Widgets for the GUI
+# Quantity Entry Widget
+quantity_label = tk.Label(root, text="^< Quantity for our Best Seller: >^", font=("Bookman Old Style", 10, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=3)
+quantity_label.grid(row=9, column=3, columnspan=2, padx=10, pady=5)
+quantity_entry = tk.Entry(root, width=10)
+quantity_entry.grid(row=10, column=3, columnspan=2, padx=10, pady=5)
+quantity_entry.insert(0, "1")  # Default quantity is 1
 
+quantity_label = tk.Label(root, text="Quantity: >", font=("Bookman Old Style", 10, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=3)
+quantity_label.grid(row=9, column=1, padx=10, pady=5)
+quantity_entry1 = tk.Entry(root, width=5)
+quantity_entry1.grid(row=10, column=1, padx=10, pady=5)
+quantity_entry1.insert(0, "1")  # Default quantity is 1
 
-add_label=tk.Label(root,text="Select an item",font=("Bookman Old Style",12,"bold"),fg="#4A0909",bg="#E8B878",relief="raised",bd=5)
-add_label.grid(row=9,column=1,padx=20,pady=5)
+quantity_label = tk.Label(root, text="< Quantity:", font=("Bookman Old Style", 10, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=3)
+quantity_label.grid(row=9, column=6, padx=10, pady=5)
+quantity_entry2 = tk.Entry(root, width=5)
+quantity_entry2.grid(row=10, column=6, padx=10, pady=5)
+quantity_entry2.insert(0, "1")  # Default quantity is 1
+
+add_label=tk.Label(root,text="Select Beverage",font=("Bookman Old Style",12,"bold"),fg="#4A0909",bg="#E8B878",relief="raised",bd=5)
+add_label.grid(row=9,column=2,padx=20,pady=5)
 
 menu_combo=ttk.Combobox(root,values=list(beveragemenu.keys()),text="select beverage")
-menu_combo.grid(row=10,column=1,padx=20,pady=5)
+menu_combo.grid(row=10,column=2,padx=20,pady=5)
 
 add_button=tk.Button(root,text="add to cart",command=add_item,font=("Bookman Old Style",10,"bold"),fg="#4A0909",bg="#E8B878",relief="raised",bd=4)
-add_button.grid(row=11,column=1,padx=20,pady=5)
+add_button.grid(row=11,column=2,padx=20,pady=5)
 
-add2_label=tk.Label(root,text="Select an item",font=("Bookman Old Style",12,"bold"),fg="#4A0909",bg="#E8B878",relief="raised",bd=5)
-add2_label.grid(row=9,column=2,padx=20,pady=5)
+add2_label=tk.Label(root,text="Select Food Item",font=("Bookman Old Style",12,"bold"),fg="#4A0909",bg="#E8B878",relief="raised",bd=5)
+add2_label.grid(row=9,column=5,padx=20,pady=5)
 
 menu2_combo=ttk.Combobox(root,values=list(foodmenu.keys()),text="select a food item")
-menu2_combo.grid(row=10,column=2,padx=20,pady=5)
+menu2_combo.grid(row=10,column=5,padx=20,pady=5)
 
 add2_button=tk.Button(root,text="add to cart",command=add_item2,font=("Bookman Old Style",10,"bold"),fg="#4A0909",bg="#E8B878",relief="raised",bd=4)
-add2_button.grid(row=11,column=2,padx=20,pady=5)
+add2_button.grid(row=11,column=5,padx=20,pady=5)
 
-cart_listbox=tk.Listbox(root,width=40,height=8) 
-cart_listbox.grid(row=12,column=1,padx=20,pady=20,columnspan=2)
-total_label=tk.Label(root,text="Total: Rs 0.00",width=15,font=("Bookman Old Style",10,"bold"),fg="#4A0909",bg="#E8B878",relief="raised",bd=4)
-total_label.grid(row=13,column=1,padx=20,pady=20,columnspan=2)
+cart_listbox=tk.Listbox(root,width=50,height=9,selectmode="multiple") 
+cart_listbox.grid(row=13,column=1,padx=20,pady=20,columnspan=2)
+total_label=tk.Label(root,text="Total: Rs 0.00",width=15,font=("Bookman Old Style",12,"bold"),fg="#4A0909",bg="#E8B878",relief="raised",bd=5)
+total_label.grid(row=12,column=4,padx=10,pady=20,columnspan=2,rowspan=2)
 
-qr_label=tk.Label(root,text="scan qr code to see menu",font=("Bookman Old Style",10,"bold"),fg="#4A0909",bg="#E8B878",relief="groove",bd=3)
-qr_label.grid(row=13, column=3,padx=20,pady=20)
-
-qr_img= Image.open("C:/Users/Parija Sharma/OneDrive/Desktop/tkinter/menu.png").resize((100,100),Image.LANCZOS)
-qr_img =ImageTk.PhotoImage(qr_img)
-
-qr_label_img = tk.Label(root, image=qr_img,font=("Bookman Old Style",10,"bold"),fg="#4A0909",bg="#E8B878",relief="raised",bd=4)
-qr_label_img.grid(row=12, column=3, padx=20, pady=20)
 
 # Button to generate bill
 bill_button = tk.Button(root, text="Generate Bill", command=generate_bill, font=("Bookman Old Style", 12, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=5)
-bill_button.grid(row=12, column=4, columnspan=2, pady=20)
+bill_button.grid(row=12, column=6, columnspan=2,rowspan=2, pady=20)
 
-# Clear button:
-clear_button=tk.Button(root, text="Clear", command=Clear_button, font=("Bookman Old Style", 10, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=5)
-clear_button.grid(row=11, column=2,columnspan=2, pady=5,padx=15)
+clear2_button=tk.Button(root, text="Clear", command=Clear2_button, font=("Bookman Old Style", 8, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=5)
+clear2_button.grid(row=12, column=2, pady=5,padx=5)
 
-clear_button=tk.Button(root, text="Clear", command=Clear_button, font=("Bookman Old Style", 10, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=5)
-clear_button.grid(row=11, column=1, columnspan=2, pady=5,padx=15)
+clear3_button=tk.Button(root, text="Clear", command=Clear3_button, font=("Bookman Old Style", 8, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=5)
+clear3_button.grid(row=12, column=5, pady=5,padx=5)
+
+clear_button=tk.Button(root, text=" Clear Cart ", command=clear_cart, font=("Bookman Old Style", 10, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=5)
+clear_button.grid(row=12, column=3, pady=5, padx=15, rowspan=2)
+
+remove_button = tk.Button(root, text="Remove Item", command=remove_item, font=("Bookman Old Style", 10, "bold"), fg="#4A0909", bg="#E8B878", relief="raised", bd=5)
+remove_button.grid(row=14, column=1, pady=5, padx=15,columnspan=2)
 root.mainloop()
 
